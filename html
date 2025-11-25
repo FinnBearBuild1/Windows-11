@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11 Desktop Mockup with Persistence</title>
+    <style>
+        /* --- GLOBAL & DESKTOP STYLES --- */
+        :root {
+            --win-blue: #0078d4;
+            --win-red: #c42b1c; /* Windows 11 close red */
+            --win-dark-bg: #202020;
+            --taskbar-height: 48px;
+            --chrome-grey: #f1f3f4;
+            --settings-bg: #f3f3f3;
+            --store-color: #0087c5;
+            --titlebar-height: 32px;
+            --titlebar-bg: #eef2f5; /* Light grey/blueish from screenshot */
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI Variable', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; 
+            background-color: #000;
+            background-image: linear-gradient(135deg, #001f3f 0%, #0073e6 100%);
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            user-select: none; 
+        }
+
+        /* --- DESKTOP ICON STYLES --- */
+        .desktop-icons {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-wrap: wrap;
+            height: 90vh; /* Allow wrapping */
+        }
+
+        .desktop-icon {
+            width: 80px;
+            height: 80px;
+            color: #fff;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.1s;
+        }
+
+        .desktop-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .desktop-icon img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 4px;
+            object-fit: contain; 
+        }
+        
+        .desktop-icon .icon-text {
+            font-size: 40px;
+            height: 40px;
+            width: 40px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .desktop-icon span.label {
+            display: block;
+            font-size: 12px;
+            word-wrap: break-word;
+            padding: 0 5px;
+            line-height: 1.2;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        /* --- TASKBAR STYLES (MODIFIED FOR RIGHT-SIDE TRAY) --- */
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--taskbar-height);
+            background-color: rgba(32, 32, 32, 0.85);
+            backdrop-filter: blur(20px); 
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between; /* Changed from center to space-between */
+            align-items: center;
+            z-index: 1000;
+            padding: 0 4px; /* Added padding */
+        }
+
+        .taskbar-center {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .taskbar-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        /* New Apps Taskbar Icons */
+        .taskbar-icon[data-app-id*="whatsapp"] img { filter: drop-shadow(0 0 2px #25D366); }
+        .taskbar-icon[data-app-id*="spotify"] img { filter: drop-shadow(0 0 2px #1DB954); }
+        .taskbar-icon[data-app-id*="netflix"] img { filter: drop-shadow(0 0 2px #E50914); }
+
+        .taskbar-icon img, .taskbar-icon .icon-text {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            transition: transform 0.2s;
+        }
+        
+        .taskbar-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .taskbar-icon:active img {
+            transform: scale(0.85);
+        }
+
+        .taskbar-icon.active-app {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        .taskbar-icon.active-app::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            width: 6px;
+            height: 3px;
+            background-color: #85c0ff; /* Windows 11 style pill */
+            border-radius: 2px;
+        }
+        
+        /* New styles for the right tray */
+        .taskbar-right-tray {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto; /* Pushes it to the right */
+        }
+
+        .taskbar-right-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center; /* For the date/time stack */
+            padding: 4px 6px;
+            height: 40px;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer; 
+            transition: background-color 0.1s;
+            font-size: 13px;
+        }
+
+        .taskbar-right-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .taskbar-right-item #taskbarTime {
+            font-weight: 500;
+            line-height: 1.1;
+        }
+        
+        .taskbar-right-item #taskbarDate {
+            font-size: 10px;
+            line-height: 1.1;
+            font-weight: 300;
+        }
+
+
+        /* --- GENERAL WINDOW STYLES --- */
+        .window-app {
+            position: absolute;
+            width: 800px;
+            min-width: 320px;
+            height: 500px;
+            min-height: 200px;
+            background-color: #f9f9f9; 
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            resize: both; 
+            z-index: 50; 
+            visibility: hidden; 
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.15s cubic-bezier(0.1, 0.9, 0.2, 1), transform 0.15s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+
+        .window-app.active {
+            visibility: visible;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .window-app.minimized {
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            pointer-events: none;
+            transition: all 0.2s ease-in;
+        }
+
+        .window-app.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100vh - var(--taskbar-height)) !important; 
+            border-radius: 0;
+            resize: none; 
+            transform: none !important;
+        }
+
+        /* --- TITLE BAR REDESIGN --- */
+        .title-bar {
+            height: var(--titlebar-height);
+            background-color: var(--titlebar-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; /* Align closer to top */
+            padding-left: 12px;
+            cursor: default; 
+            user-select: none;
+            flex-shrink: 0;
+        }
+        
+        .title-bar-text {
+            height: 100%;
+            font-size: 12px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            pointer-events: none; 
+            padding-top: 2px;
+        }
+        
+        .title-bar-text img, .title-bar-text .icon-text {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .window-controls {
+            display: flex;
+            height: 100%;
+            align-items: flex-start;
+        }
+
+        .control-btn {
+            width: 46px;
+            height: 31px; /* Slightly shorter than bar to look floating/flat */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+        
+        /* SVG Icons for Title Bar */
+        .control-btn svg {
+            width: 10px;
+            height: 10px;
+            fill: #1a1a1a;
+            pointer-events: none;
+        }
+
+        .control-btn:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .control-btn.close:hover {
+            background-color: var(--win-red);
+        }
+        
+        .control-btn.close:hover svg {
+            fill: #fff;
+        }
+        
+        .window-app:not(.maximized) .control-btn.close {
+            border-top-right-radius: 8px;
+        }
+
+        /* --- FILE EXPLORER STYLES --- */
+        .explorer-content { flex: 1; display: flex; flex-direction: column; background: #fff; }
+        .explorer-header { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; gap: 10px; background: #f9f9f9; }
+        .nav-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; color: #555; font-size: 16px; }
+        .nav-btn:hover { background-color: rgba(0,0,0,0.05); }
+        #addressBar { flex: 1; height: 30px; border: 1px solid #d1d1d1; background: #fff; display: flex; align-items: center; padding: 0 10px; font-size: 13px; color: #444; border-radius: 4px; }
+        .explorer-main-area { flex: 1; display: flex; overflow: hidden; }
+        .explorer-sidebar { width: 180px; padding: 10px 0; background: #f0f0f0; border-right: 1px solid #e5e5e5; font-size: 13px; }
+        .explorer-sidebar h3 { margin: 10px 15px 5px; font-size: 11px; color: #666; text-transform: uppercase; }
+        .explorer-sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .explorer-sidebar li { padding: 6px 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .explorer-sidebar li:hover { background-color: rgba(0,0,0,0.05); }
+        .explorer-sidebar li img { width: 16px; height: 16px; }
+        .explorer-main { flex: 1; padding: 10px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); grid-auto-rows: 100px; gap: 5px; align-content: start; }
+        .file-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 10px 5px; cursor: pointer; border: 1px solid transparent; border-radius: 4px; }
+        .file-item:hover { background-color: #f0f8ff; border-color: #cce8ff; }
+        .file-item img { width: 40px; height: 40px; margin-bottom: 5px; }
+        .file-item span { font-size: 12px; text-align: center; word-break: break-word; color: #333; }
+
+        /* --- CHROME UI STYLES --- */
+        .chrome-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background-color: #fff; }
+        .chrome-tabs-container { height: 34px; background-color: #dfe1e5; display: flex; align-items: flex-end; padding: 4px 8px 0; gap: 4px; }
+        .chrome-tab { background-color: transparent; border-radius: 8px 8px 0 0; padding: 0 10px; font-size: 12px; display: flex; align-items: center; height: 28px; max-width: 180px; flex: 1; position: relative; color: #3c4043; cursor: default; transition: background-color 0.1s; }
+        .chrome-tab:hover { background-color: #eceef1; }
+        .chrome-tab.active { background-color: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); z-index: 1; height: 30px; }
+        .chrome-tab-close { margin-left: auto; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; }
+        .chrome-tab-close:hover { background-color: #ddd; }
+        .chrome-new-tab { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; font-size: 20px; color: #5f6368; }
+        .chrome-new-tab:hover { background-color: rgba(0,0,0,0.1); }
+        .chrome-toolbar { height: 44px; background-color: #fff; border-bottom: 1px solid #dfe1e5; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+        .chrome-address-bar { flex-grow: 1; height: 28px; border-radius: 14px; border: none; background-color: #f1f3f4; padding: 0 15px; font-size: 14px; color: #202124; outline: none; }
+        .chrome-address-bar:focus { background-color: #fff; box-shadow: 0 0 0 2px rgba(26,115,232,0.4), 0 1px 2px rgba(0,0,0,0.1); }
+        .chrome-nav-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: #5f6368; font-size: 16px; }
+        .chrome-nav-btn:hover { background-color: rgba(0,0,0,0.06); }
+        #chromeBookmarkBar { height: 28px; background-color: #fff; border-bottom: 1px solid #dfe1e5; display: flex; align-items: center; padding: 0 12px; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+        .chrome-main-view { flex: 1; overflow-y: auto; position: relative; }
+        
+        /* --- APP THEMES (WhatsApp, Spotify, etc) --- */
+        .app-container { width: 100%; height: 100%; display: flex; }
+        .spotify-theme { background-color: #121212; color: #fff; display: flex; }
+        .spotify-sidebar { width: 200px; background-color: #000; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .spotify-main { flex: 1; background: linear-gradient(180deg, #2a2a2a 0%, #121212 100%); padding: 20px; overflow-y: auto; }
+        .netflix-theme { background-color: #141414; color: #fff; overflow-y: auto; }
+        .whatsapp-theme { display: flex; width: 100%; height: 100%; background: #e5ddd5; }
+        .whatsapp-sidebar { width: 30%; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; }
+        .whatsapp-chat { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+
+        /* --- MICROSOFT STORE & SETTINGS --- */
+        .store-content, .settings-content { flex: 1; display: flex; overflow: hidden; background: #fff; }
+        .store-sidebar, .settings-sidebar { width: 200px; background: #f3f3f3; padding: 15px 0; flex-shrink: 0; }
+        .sidebar-item { padding: 10px 20px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 10px; color: #333; }
+        .sidebar-item:hover { background: #e5e5e5; }
+        .sidebar-item.active { background: #e0e0e0; font-weight: 600; border-left: 3px solid var(--win-blue); }
+        .store-main, .settings-main { flex: 1; padding: 20px 30px; overflow-y: auto; }
+        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; }
+        .store-app-card { background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: default; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .store-app-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .store-app-card img { width: 64px; height: 64px; border-radius: 12px; margin-bottom: 10px; object-fit: cover; }
+        .store-app-card h4 { margin: 0 0 5px; font-size: 14px; font-weight: 600; }
+        .store-btn { background: #f0f0f0; color: #333; border: 1px solid #ccc; padding: 5px 20px; border-radius: 4px; font-size: 12px; margin-top: auto; cursor: pointer; font-weight: 600; }
+        .store-btn.primary { background: var(--win-blue); color: #fff; border: none; }
+        .store-btn:active { transform: scale(0.95); }
+
+        .settings-section h2 { font-size: 20px; margin-bottom: 20px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .color-picker-container { display: flex; gap: 10px; }
+        .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-dot.selected { border-color: #333; transform: scale(1.1); }
+
+        /* Message Box */
+        .message-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 2000; padding: 20px 25px; width: 320px; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .message-box.visible { opacity: 1; pointer-events: auto; }
+        .message-box button { background-color: var(--win-blue); color: white; padding: 8px 25px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 15px; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1999; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Message Box Overlay -->
+    <div class="overlay" id="msgOverlay"></div>
+    <div class="message-box" id="messageBox">
+        <h3 style="margin-top:0; color:#0078d4;">System Message</h3>
+        <p id="messageText">Notification text here.</p>
+        <button id="messageOkBtn">OK</button>
+    </div>
+
+    <!-- Desktop Icons -->
+    <div class="desktop-icons" id="desktopIconsContainer">
+        <div class="desktop-icon" id="desktop-icon-file-explorer" onclick="appManager.open('file-explorer')">
+            <img src="https://www.rw-designer.com/icon-image/22960-256x256x68.png" onerror="this.src='https://placehold.co/48x48/0078d4/ffffff?text=F'" alt="File Explorer">
+            <span class="label">File Explorer</span>
+        </div>
+        <div class="desktop-icon" id="desktop-icon-chrome" onclick="appManager.open('chrome')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOzM28PfsUbrvn4mzcI7UtdW6-TiVATNW4-A&s" onerror="this.src='https://placehold.co/48x48/4285F4/ffffff?text=C'" alt="Chrome">
+            <span class="label">Google Chrome</span>
+        </div>
+        <div class="desktop-icon" id="desktop-icon-settings" onclick="appManager.open('settings')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAr6ZNNElfRoV5TPmzAtiE1x8rs5AT-GO7jg&s" onerror="this.src='https://placehold.co/48x48/666666/ffffff?text=S'" alt="Settings">
+            <span class="label">Settings</span>
+        </div>
+        <div class="desktop-icon" id="desktop-icon-store" onclick="appManager.open('store')">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2L24rrfq6RB2CmBnuAgtfJNhDbPCT2pYIUA&s" alt="Store"
+            <span class="label">Microsoft Store</span>
+        </div>
+        <!-- Installed apps will appear here dynamically -->
+    </div>
+
+    <!-- APP: FILE EXPLORER -->
+    <div class="window-app" id="win_file-explorer" style="top: 10%; left: 15%;">
+        <div class="title-bar" id="tb_file-explorer">
+            <div class="title-bar-text">
+                <img src="https://img.icons8.com/fluency/20/folder-invoices.png"> File Explorer
+            </div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="appManager.minimize('file-explorer')"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z"/></svg></div>
+                <div class="control-btn" onclick="appManager.maximize('file-explorer')"><svg viewBox="0 0 10 10"><path d="M1 1v8h8V1H1zm9 9H0V0h10v10z"/></svg></div>
+                <div class="control-btn close" onclick="appManager.close('file-explorer')"><svg viewBox="0 0 10 10"><path d="M10 1.01L8.99 0 5 3.99 1.01 0 0 1.01 3.99 5 0 8.99 1.01 10 5 6.01 8.99 10 10 8.99 6.01 5z"/></svg></div>
+            </div>
+        </div>
+        <div class="explorer-content">
+            <div class="explorer-header">
+                <div class="nav-btn" onclick="fileExplorer.goBack()">←</div>
+                <div class="nav-btn" onclick="fileExplorer.goForward()">→</div>
+                <div class="nav-btn">↑</div>
+                <div id="addressBar">This PC > Desktop</div>
+            </div>
+            <div class="explorer-main-area">
+                <div class="explorer-sidebar">
+                    <h3>Quick Access</h3>
+                    <ul>
+                        <li onclick="fileExplorer.navigate('Desktop')"><img src="https://img.icons8.com/fluency/16/desktop.png"> Desktop</li>
+                        <li onclick="fileExplorer.navigate('Downloads')"><img src="https://img.icons8.com/color/16/download.png"> Downloads</li>
+                        <li onclick="fileExplorer.navigate('Documents')"><img src="https://img.icons8.com/color/16/document.png"> Documents</li>
+                        <li onclick="fileExplorer.navigate('Pictures')"><img src="https://img.icons8.com/color/16/picture.png"> Pictures</li>
+                    </ul>
+                    <h3>This PC</h3>
+                    <ul>
+                        <li onclick="fileExplorer.navigate('C:')"><img src="https://img.icons8.com/color/16/windows-10.png"> Local Disk (C:)</li>
+                    </ul>
+                </div>
+                <div class="explorer-main" id="explorerFiles"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP: CHROME -->
+    <div class="window-app" id="win_chrome" style="top: 15%; left: 20%; width: 800px; height: 500px;">
+        <div class="title-bar" id="tb_chrome">
+            <div class="title-bar-text">
+                <img src="https://img.icons8.com/color/20/chrome.png"> Google Chrome
+            </div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="appManager.minimize('chrome')"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z"/></svg></div>
+                <div class="control-btn" onclick="appManager.maximize('chrome')"><svg viewBox="0 0 10 10"><path d="M1 1v8h8V1H1zm9 9H0V0h10v10z"/></svg></div>
+                <div class="control-btn close" onclick="appManager.close('chrome')"><svg viewBox="0 0 10 10"><path d="M10 1.01L8.99 0 5 3.99 1.01 0 0 1.01 3.99 5 0 8.99 1.01 10 5 6.01 8.99 10 10 8.99 6.01 5z"/></svg></div>
+            </div>
+        </div>
+        <div class="chrome-content">
+            <div class="chrome-tabs-container" id="chromeTabs">
+                <!-- Tabs injected here -->
+                <div class="chrome-new-tab" onclick="chromeApp.addTab()">+</div>
+            </div>
+            <div class="chrome-toolbar">
+                <div class="chrome-nav-btn" onclick="chromeApp.goBack()">←</div>
+                <div class="chrome-nav-btn" onclick="chromeApp.goForward()">→</div>
+                <div class="chrome-nav-btn" onclick="chromeApp.reload()">↻</div>
+                <input type="text" class="chrome-address-bar" id="chromeUrlInput" placeholder="Search Google or type a URL">
+                <div class="chrome-nav-btn" id="chromeStarBtn" onclick="chromeApp.toggleBookmark()" title="Bookmark">☆</div>
+            </div>
+            <div id="chromeBookmarkBar"></div>
+            <div class="chrome-main-view" id="chromeView"></div>
+        </div>
+    </div>
+
+    <!-- APP: STORE -->
+    <div class="window-app" id="win_store" style="top: 25%; left: 30%; width: 850px; height: 550px;">
+        <div class="title-bar" id="tb_store">
+            <div class="title-bar-text">
+                <span class="icon-text" style="color: #0087c5; margin-right: 10px;">🛍️</span> Microsoft Store
+            </div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="appManager.minimize('store')"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z"/></svg></div>
+                <div class="control-btn" onclick="appManager.maximize('store')"><svg viewBox="0 0 10 10"><path d="M1 1v8h8V1H1zm9 9H0V0h10v10z"/></svg></div>
+                <div class="control-btn close" onclick="appManager.close('store')"><svg viewBox="0 0 10 10"><path d="M10 1.01L8.99 0 5 3.99 1.01 0 0 1.01 3.99 5 0 8.99 1.01 10 5 6.01 8.99 10 10 8.99 6.01 5z"/></svg></div>
+            </div>
+        </div>
+        <div class="store-content">
+            <div class="store-sidebar">
+                <div class="sidebar-item active" onclick="storeApp.navigate('Home')" id="storeNavHome">Home</div>
+                <div class="sidebar-item" onclick="storeApp.navigate('Apps')" id="storeNavApps">Apps</div>
+                <div class="sidebar-item" onclick="storeApp.navigate('Gaming')" id="storeNavGaming">Gaming</div>
+                <div class="sidebar-item" onclick="storeApp.navigate('Library')" id="storeNavLibrary">Library</div>
+            </div>
+            <div class="store-main" id="storeMainContent">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- APP: SETTINGS -->
+    <div class="window-app" id="win_settings" style="top: 20%; left: 25%;">
+        <div class="title-bar" id="tb_settings">
+            <div class="title-bar-text">
+                <img src="https://img.icons8.com/fluency/20/settings.png"> Settings
+            </div>
+            <div class="window-controls">
+                <div class="control-btn" onclick="appManager.minimize('settings')"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z"/></svg></div>
+                <div class="control-btn" onclick="appManager.maximize('settings')"><svg viewBox="0 0 10 10"><path d="M1 1v8h8V1H1zm9 9H0V0h10v10z"/></svg></div>
+                <div class="control-btn close" onclick="appManager.close('settings')"><svg viewBox="0 0 10 10"><path d="M10 1.01L8.99 0 5 3.99 1.01 0 0 1.01 3.99 5 0 8.99 1.01 10 5 6.01 8.99 10 10 8.99 6.01 5z"/></svg></div>
+            </div>
+        </div>
+        <div class="settings-content">
+            <div class="settings-sidebar">
+                <div class="sidebar-item active">System</div>
+                <div class="sidebar-item">Bluetooth & devices</div>
+                <div class="sidebar-item">Personalization</div>
+                <div class="sidebar-item">Apps</div>
+            </div>
+            <div class="settings-main">
+                <div class="settings-section">
+                    <h2>Personalization</h2>
+                    <div class="setting-row">
+                        <div>
+                            <div style="font-weight: 500;">Background</div>
+                            <div style="font-size: 12px; color: #666;">Choose your desktop background color</div>
+                        </div>
+                        <div class="color-picker-container" id="bgPicker">
+                            <div class="color-dot selected" style="background: linear-gradient(135deg, #001f3f 0%, #0073e6 100%);" onclick="settingsApp.setBg(this, 'linear-gradient(135deg, #001f3f 0%, #0073e6 100%)')"></div>
+                            <div class="color-dot" style="background: #a80000;" onclick="settingsApp.setBg(this, '#a80000')"></div>
+                            <div class="color-dot" style="background: #008a00;" onclick="settingsApp.setBg(this, '#008a00')"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dynamic App Windows Container (for WhatsApp, Spotify, etc) -->
+    <div id="dynamicWindows"></div>
+
+    <!-- Taskbar (MODIFIED) -->
+    <div class="taskbar">
+        <!-- Start Button (Leftmost) -->
+        <div class="taskbar-icon" id="startBtn" onclick="toggleStartMenu()">
+            <img src="https://images.seeklogo.com/logo-png/40/2/windows-11-icon-logo-png_seeklogo-406208.png" alt="Start">
+        </div>
+
+        <!-- Center App Icons -->
+        <div class="taskbar-center" id="taskbarIcons">
+            <div class="taskbar-icon" id="icon_file-explorer" onclick="appManager.toggle('file-explorer')">
+                <img src="https://www.rw-designer.com/icon-image/22960-256x256x68.png" alt="Explorer">
+            </div>
+            
+            <div class="taskbar-icon" id="icon_chrome" onclick="appManager.toggle('chrome')">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOzM28PfsUbrvn4mzcI7UtdW6-TiVATNW4-A&s" alt="Chrome">
+            </div>
+            
+            <div class="taskbar-icon" id="icon_settings" onclick="appManager.toggle('settings')">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAr6ZNNElfRoV5TPmzAtiE1x8rs5AT-GO7jg&s" alt="Settings">
+            </div>
+
+            <div class="taskbar-icon" id="icon_store" onclick="appManager.toggle('store')">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2L24rrfq6RB2CmBnuAgtfJNhDbPCT2pYIUA&s" alt="Store">
+            </div>
+        </div>
+        
+        <!-- Right System Tray, Clock, Notifications (New) -->
+        <div class="taskbar-right-tray">
+            <!-- Hidden Icons Placeholder -->
+            <div class="taskbar-icon" title="Hidden icons" onclick="showMessage('Hidden icons tray')">
+                <img src="https://cdn-icons-png.flaticon.com/512/271/271239.png" style="width:18px; height:18px; filter: invert(1);">
+            </div>
+            <!-- Volume/Wifi -->
+            <div class="taskbar-icon" title="Wi-Fi" onclick="showMessage('Network Status')">
+                <img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" style="width:18px; height:18px; filter: invert(1);">
+            </div>
+            <div class="taskbar-icon" title="Volume" onclick="showMessage('Volume Control')">
+                <img src="https://cdn-icons-png.flaticon.com/512/347/347794.png" style="width:18px; height:18px; filter: invert(1);">
+            </div>
+            <!-- Clock/Date -->
+            <div class="taskbar-right-item" onclick="showMessage('Notification Center and Calendar')">
+                <span id="taskbarTime">--:--</span>
+                <span id="taskbarDate">--/--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        /* --- FIREBASE SETUP --- */
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let currentUser = null;
+
+        /* --- GLOBAL UI & HELPERS --- */
+        window.showMessage = (msg) => {
+            document.getElementById('messageText').textContent = msg;
+            document.getElementById('msgOverlay').classList.add('visible');
+            document.getElementById('messageBox').classList.add('visible');
+        };
+
+        document.getElementById('messageOkBtn').addEventListener('click', () => {
+            document.getElementById('msgOverlay').classList.remove('visible');
+            document.getElementById('messageBox').classList.remove('visible');
+        });
+
+        /* --- TASKBAR CLOCK LOGIC (NEW) --- */
+        function updateClock() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit' };
+            const dateOptions = { month: '2-digit', day: '2-digit' };
+            
+            const timeStr = now.toLocaleTimeString('en-US', timeOptions);
+            const dateStr = now.toLocaleDateString('en-US', dateOptions);
+
+            const timeEl = document.getElementById('taskbarTime');
+            const dateEl = document.getElementById('taskbarDate');
+            
+            if (timeEl) timeEl.textContent = timeStr;
+            if (dateEl) dateEl.textContent = dateStr;
+        }
+
+        // Run immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
+
+
+        /* --- WINDOW MANAGER --- */
+        class AppManager {
+            constructor() {
+                this.zIndex = 100;
+                this.apps = ['file-explorer', 'chrome', 'settings', 'store'];
+                
+                // Init static apps
+                this.apps.forEach(app => this.initWindow(app));
+            }
+
+            initWindow(appId) {
+                const win = document.getElementById(`win_${appId}`);
+                if(!win) return;
+                
+                // Make draggable
+                this.makeDraggable(win, document.getElementById(`tb_${appId}`));
+                
+                // Click to focus
+                win.addEventListener('mousedown', () => this.focus(appId));
+            }
+
+            createDynamicWindow(appId, appName, iconUrl, themeClass) {
+                if(document.getElementById(`win_${appId}`)) return;
+
+                const container = document.getElementById('dynamicWindows');
+                const win = document.createElement('div');
+                win.className = 'window-app';
+                win.id = `win_${appId}`;
+                win.style.top = '15%';
+                win.style.left = '20%';
+                
+                let contentHtml = '';
+                if(themeClass === 'spotify-theme') {
+                    contentHtml = `
+                        <div class="app-container spotify-theme">
+                            <div class="spotify-sidebar">
+                                <div style="color:white; font-weight:bold; margin-bottom:20px;">Spotify</div>
+                                <div style="color:#b3b3b3;">Home</div>
+                                <div style="color:#b3b3b3;">Search</div>
+                                <div style="color:#b3b3b3;">Library</div>
+                            </div>
+                            <div class="spotify-main">
+                                <h2 style="color:white;">Good afternoon</h2>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                    <div style="background:#333; height:60px; border-radius:4px; display:flex; align-items:center; padding-left:10px;">Liked Songs</div>
+                                    <div style="background:#333; height:60px; border-radius:4px; display:flex; align-items:center; padding-left:10px;">Daily Mix 1</div>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if(themeClass === 'netflix-theme') {
+                    contentHtml = `
+                        <div class="app-container netflix-theme">
+                            <div style="padding:20px;">
+                                <h1 style="color:#E50914;">NETFLIX</h1>
+                                <h3>Trending Now</h3>
+                                <div style="display:flex; gap:10px; overflow-x:auto;">
+                                    <div style="width:150px; height:220px; background:#333;"></div>
+                                    <div style="width:150px; height:220px; background:#333;"></div>
+                                    <div style="width:150px; height:220px; background:#333;"></div>
+                                    <div style="width:150px; height:220px; background:#333;"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if(themeClass === 'whatsapp-theme') {
+                    contentHtml = `
+                        <div class="app-container whatsapp-theme">
+                            <div class="whatsapp-sidebar">
+                                <div style="height:50px; background:#f0f2f5; padding:10px; display:flex; align-items:center; border-bottom:1px solid #ddd;">
+                                    <img src="https://img.icons8.com/color/48/user-male-circle--v1.png" width="30">
+                                </div>
+                                <div style="padding:10px; border-bottom:1px solid #f0f0f0;">John Doe<br><span style="font-size:12px; color:#666;">Hey there!</span></div>
+                                <div style="padding:10px; border-bottom:1px solid #f0f0f0;">Mom<br><span style="font-size:12px; color:#666;">Call me later.</span></div>
+                            </div>
+                            <div class="whatsapp-chat">
+                                <div style="height:50px; background:#f0f2f5; border-bottom:1px solid #ddd; display:flex; align-items:center; padding-left:20px;">John Doe</div>
+                            </div>
+                        </div>`;
+                } else {
+                    contentHtml = `<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:20px; color:#555;">${appName} is running</div>`;
+                }
+
+                win.innerHTML = `
+                    <div class="title-bar" id="tb_${appId}">
+                        <div class="title-bar-text">
+                            <img src="${iconUrl}" width="16" height="16"> ${appName}
+                        </div>
+                        <div class="window-controls">
+                            <div class="control-btn" onclick="appManager.minimize('${appId}')"><svg viewBox="0 0 10 1"><path d="M0 0h10v1H0z"/></svg></div>
+                            <div class="control-btn" onclick="appManager.maximize('${appId}')"><svg viewBox="0 0 10 10"><path d="M1 1v8h8V1H1zm9 9H0V0h10v10z"/></svg></div>
+                            <div class="control-btn close" onclick="appManager.close('${appId}')"><svg viewBox="0 0 10 10"><path d="M10 1.01L8.99 0 5 3.99 1.01 0 0 1.01 3.99 5 0 8.99 1.01 10 5 6.01 8.99 10 10 8.99 6.01 5z"/></svg></div>
+                        </div>
+                    </div>
+                    ${contentHtml}
+                `;
+                container.appendChild(win);
+                this.initWindow(appId);
+            }
+
+            open(appId) {
+                // If it's a store app, ensure it exists first
+                const appDef = storeApp.allApps.find(a => a.id === appId);
+                if (appDef && !document.getElementById(`win_${appId}`)) {
+                    this.createDynamicWindow(appId, appDef.name, appDef.icon, appDef.theme);
+                }
+
+                const win = document.getElementById(`win_${appId}`);
+                if (!win) return; // Should allow error or download prompt
+
+                const icon = document.getElementById(`icon_${appId}`);
+                
+                if (win.classList.contains('minimized')) {
+                    win.classList.remove('minimized');
+                }
+                
+                if (!win.classList.contains('active')) {
+                    win.style.opacity = '0';
+                    setTimeout(() => {
+                        win.classList.add('active');
+                        win.style.opacity = ''; 
+                    }, 10);
+                }
+                
+                if(icon) icon.classList.add('active-app');
+                this.focus(appId);
+            }
+
+            close(appId) {
+                const win = document.getElementById(`win_${appId}`);
+                win.classList.remove('active');
+                setTimeout(() => {
+                    win.classList.remove('minimized');
+                    const icon = document.getElementById(`icon_${appId}`);
+                    if(icon) icon.classList.remove('active-app');
+                }, 200);
+            }
+
+            minimize(appId) {
+                const win = document.getElementById(`win_${appId}`);
+                win.classList.add('minimized');
+            }
+
+            maximize(appId) {
+                const win = document.getElementById(`win_${appId}`);
+                win.classList.toggle('maximized');
+            }
+
+            toggle(appId) {
+                const win = document.getElementById(`win_${appId}`);
+                if(!win) { this.open(appId); return; }
+
+                if (!win.classList.contains('active')) {
+                    this.open(appId);
+                } else if (win.classList.contains('minimized')) {
+                    win.classList.remove('minimized');
+                    this.focus(appId);
+                } else {
+                    if (win.style.zIndex == this.zIndex) {
+                        this.minimize(appId);
+                    } else {
+                        this.focus(appId);
+                    }
+                }
+            }
+
+            focus(appId) {
+                this.zIndex++;
+                const win = document.getElementById(`win_${appId}`);
+                if(win) win.style.zIndex = this.zIndex;
+            }
+
+            makeDraggable(element, handle) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                handle.onmousedown = dragMouseDown;
+                function dragMouseDown(e) {
+                    if (element.classList.contains('maximized')) return;
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                }
+                function elementDrag(e) {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+        }
+
+        window.appManager = new AppManager();
+
+        /* --- STORE LOGIC --- */
+        class StoreApp {
+            constructor() {
+                this.currentPage = 'Home';
+                this.installedApps = {}; // { 'whatsapp': true }
+                this.allApps = [
+                    { id: 'whatsapp', name: 'WhatsApp', category: 'Apps', icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwNVlJONXwyBWjjATvxvNTxLG7PnSyvaidbg&s', theme: 'whatsapp-theme' },
+                    { id: 'netflix', name: 'Netflix', category: 'Apps', icon: 'https://cdn.worldvectorlogo.com/logos/netflix-logo-icon.svg', theme: 'netflix-theme' },
+                    { id: 'spotify', name: 'Spotify', category: 'Apps', icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKB1fBlHxq3EtddqbiL8W-Z2IyOqNkcCSUfA&s', theme: 'spotify-theme' },
+                    { id: 'instagram', name: 'Instagram', category: 'Apps', icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz4TqvVsgzZYxIF_V4MtjYN9rdqgyG-yDUQw&s', theme: 'default' },
+                    { id: 'tiktok', name: 'TikTok', category: 'Apps', icon: 'https://icon2.cleanpng.com/20200922/xqh/transparent-social-media-1713858561643.webp', theme: 'default' },
+                    { id: 'minecraft', name: 'Minecraft', category: 'Gaming', icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdDh3Cw1rrxjvLWLs-TNU_caFXnSSokofhXw&s', theme: 'default' },
+                    { id: 'roblox', name: 'Roblox', category: 'Gaming', icon: 'https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/5X/c/4/c/2/c4c28132e4907f73ea0430d18d769c06276e39cc.png', theme: 'default' }
+                ];
+                this.render();
+            }
+
+            initInstalledAppsListener() {
+                if(!currentUser) return;
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'store', 'installed');
+                onSnapshot(ref, (docSnap) => {
+                    if (docSnap.exists()) {
+                        this.installedApps = docSnap.data();
+                    } else {
+                        this.installedApps = {};
+                    }
+                    this.render();
+                    this.updateDesktopAndTaskbar();
+                });
+            }
+
+            async installApp(appId) {
+                if(!currentUser) return showMessage("Please login.");
+                
+                // Optimistic UI update
+                const btn = document.getElementById(`btn-install-${appId}`);
+                if(btn) {
+                    btn.textContent = "Downloading...";
+                    btn.style.cursor = "wait";
+                }
+
+                setTimeout(async () => {
+                    // Update Firebase
+                    const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'store', 'installed');
+                    await setDoc(ref, { [appId]: true }, { merge: true });
+                    // The onSnapshot listener handles the final UI update (Library + Desktop)
+                    showMessage(`${this.allApps.find(a=>a.id===appId).name} Installed!`);
+                }, 1500);
+            }
+
+            navigate(page) {
+                this.currentPage = page;
+                document.querySelectorAll('.store-sidebar .sidebar-item').forEach(el => el.classList.remove('active'));
+                document.getElementById(`storeNav${page}`).classList.add('active');
+                this.render();
+            }
+
+            render() {
+                const container = document.getElementById('storeMainContent');
+                container.innerHTML = `<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px;">${this.currentPage}</h2>`;
+                
+                let appsToShow = [];
+                if (this.currentPage === 'Home') appsToShow = this.allApps;
+                else if (this.currentPage === 'Library') appsToShow = this.allApps.filter(a => this.installedApps[a.id]);
+                else appsToShow = this.allApps.filter(a => a.category === this.currentPage);
+
+                const grid = document.createElement('div');
+                grid.className = 'app-grid';
+
+                if (appsToShow.length === 0) {
+                    grid.innerHTML = '<div style="color:#666;">No apps found in this category.</div>';
+                }
+
+                appsToShow.forEach(app => {
+                    const isInstalled = this.installedApps[app.id];
+                    const card = document.createElement('div');
+                    card.className = 'store-app-card';
+                    card.innerHTML = `
+                        <img src="${app.icon}">
+                        <h4>${app.name}</h4>
+                        <button id="btn-install-${app.id}" class="store-btn ${isInstalled ? '' : 'primary'}">
+                            ${isInstalled ? 'Open' : 'Get'}
+                        </button>
+                    `;
+                    const btn = card.querySelector('button');
+                    btn.onclick = () => {
+                        if(isInstalled) appManager.open(app.id);
+                        else this.installApp(app.id);
+                    };
+                    grid.appendChild(card);
+                });
+                container.appendChild(grid);
+            }
+
+            updateDesktopAndTaskbar() {
+                const desktop = document.getElementById('desktopIconsContainer');
+                
+                // 1. Clean up: Remove all dynamically added desktop icons first
+                this.allApps.forEach(app => {
+                    const existingIcon = document.getElementById(`desktop-icon-${app.id}`);
+                    if (existingIcon && !['file-explorer', 'chrome', 'settings', 'store'].includes(app.id)) {
+                        desktop.removeChild(existingIcon);
+                    }
+                });
+
+                // 2. Add icons only for installed apps
+                this.allApps.forEach(app => {
+                    if (this.installedApps[app.id]) {
+                        // Desktop Icon (Ensure it's not a static system app like file-explorer)
+                        if (!document.getElementById(`desktop-icon-${app.id}`)) {
+                            const div = document.createElement('div');
+                            div.className = 'desktop-icon';
+                            div.id = `desktop-icon-${app.id}`; 
+                            div.onclick = () => appManager.open(app.id);
+                            div.innerHTML = `<img src="${app.icon}"><span class="label">${app.name}</span>`;
+                            desktop.appendChild(div);
+                        }
+                    }
+                });
+            }
+        }
+        window.storeApp = new StoreApp();
+
+
+        /* --- CHROME LOGIC (WITH TABS) --- */
+        class ChromeApp {
+            constructor() {
+                this.tabs = [ { id: 1, title: 'New Tab', url: 'https://google.com', active: true } ];
+                this.tabIdCounter = 1;
+                this.bookmarks = [];
+                this.view = document.getElementById('chromeView');
+                this.urlInput = document.getElementById('chromeUrlInput');
+                
+                this.urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        let url = this.urlInput.value;
+                        if (!url.startsWith('http') && !url.startsWith('chrome://')) url = 'https://' + url;
+                        this.navigate(url);
+                    }
+                });
+                this.render();
+            }
+
+            initBookmarksListener() {
+                if (!currentUser) return;
+                const q = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'bookmarks');
+                onSnapshot(q, (snapshot) => {
+                    this.bookmarks = [];
+                    snapshot.forEach((doc) => this.bookmarks.push({ id: doc.id, ...doc.data() }));
+                    this.renderBookmarks();
+                });
+            }
+
+            getActiveTab() { return this.tabs.find(t => t.active); }
+
+            addTab() {
+                this.tabs.forEach(t => t.active = false);
+                this.tabIdCounter++;
+                this.tabs.push({ id: this.tabIdCounter, title: 'New Tab', url: 'https://google.com', active: true });
+                this.render();
+            }
+
+            closeTab(e, id) {
+                e.stopPropagation();
+                if(this.tabs.length === 1) return; // Don't close last tab
+                const idx = this.tabs.findIndex(t => t.id === id);
+                const wasActive = this.tabs[idx].active;
+                this.tabs.splice(idx, 1);
+                if(wasActive) {
+                    // Activate previous tab or last tab
+                    const newIdx = idx > 0 ? idx - 1 : 0;
+                    this.tabs[newIdx].active = true;
+                }
+                this.render();
+            }
+
+            switchTab(id) {
+                this.tabs.forEach(t => t.active = (t.id === id));
+                this.render();
+            }
+
+            navigate(url) {
+                const tab = this.getActiveTab();
+                tab.url = url;
+                this.render();
+            }
+            
+            goBack() { /* Simplified: no history per tab yet */ }
+            goForward() { }
+            reload() { this.render(); }
+
+            async toggleBookmark() {
+                if(!currentUser) return showMessage("Login required.");
+                const tab = this.getActiveTab();
+                const existing = this.bookmarks.find(b => b.url === tab.url);
+                if(existing) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'bookmarks', existing.id));
+                } else {
+                    await setDoc(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'bookmarks')), {
+                        url: tab.url, title: tab.title, createdAt: Date.now()
+                    });
+                }
+            }
+
+            render() {
+                // Update tabs first
+                const activeTab = this.getActiveTab();
+                
+                // IMPORTANT: Calculate title based on URL *before* generating tab HTML
+                // This replaces the recursive call to renderPage that was causing the crash
+                if(activeTab.url.includes('google.com')) activeTab.title = "Google";
+                else activeTab.title = "Web Page";
+
+                const tabContainer = document.getElementById('chromeTabs');
+                // Keep the + button reference before clearing
+                let newTabBtn = tabContainer.querySelector('.chrome-new-tab');
+                if(!newTabBtn) {
+                     // create if missing (first run)
+                     newTabBtn = document.createElement('div');
+                     newTabBtn.className = 'chrome-new-tab';
+                     newTabBtn.textContent = '+';
+                     newTabBtn.onclick = () => this.addTab();
+                }
+
+                tabContainer.innerHTML = '';
+                
+                this.tabs.forEach(tab => {
+                    const el = document.createElement('div');
+                    el.className = `chrome-tab ${tab.active ? 'active' : ''}`;
+                    el.innerHTML = `
+                        <img src="https://img.icons8.com/color/16/google-logo.png" style="width:14px; margin-right:8px;">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${tab.title}</span>
+                        <div class="chrome-tab-close">✕</div>
+                    `;
+                    el.onclick = () => this.switchTab(tab.id);
+                    el.querySelector('.chrome-tab-close').onclick = (e) => this.closeTab(e, tab.id);
+                    tabContainer.appendChild(el);
+                });
+                tabContainer.appendChild(newTabBtn);
+
+                // Update URL bar
+                this.urlInput.value = activeTab.url;
+
+                // Render Page Content
+                // Note: We do NOT call this.render() from within renderPage anymore
+                this.renderPage(activeTab);
+            }
+
+            renderBookmarks() {
+                const bar = document.getElementById('chromeBookmarkBar');
+                bar.innerHTML = '';
+                this.bookmarks.forEach(b => {
+                    const el = document.createElement('div');
+                    el.className = 'bookmark-item';
+                    el.innerHTML = `<img src="https://img.icons8.com/color/16/globe--v1.png"><span>${b.title || b.url}</span>`;
+                    el.onclick = () => this.navigate(b.url);
+                    bar.appendChild(el);
+                });
+            }
+
+            renderPage(tab) {
+                this.view.innerHTML = '';
+                if(tab.url.includes('google.com')) {
+                    this.view.innerHTML = `
+                        <div class="google-page">
+                            <img class="logo" src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Google">
+                            <input type="text" class="google-search-input" placeholder="Search Google or type a URL">
+                            <div style="margin-top:20px;">
+                                <button style="padding: 8px 16px; margin: 0 5px; background: #f8f9fa; border: 1px solid #f8f9fa; border-radius: 4px; color: #3c4043; cursor: pointer;">Google Search</button>
+                            </div>
+                        </div>`;
+                    const input = this.view.querySelector('input');
+                    input.onkeypress = (e) => {
+                         if(e.key==='Enter') this.navigate('https://www.google.com/search?q='+input.value);
+                    };
+                } else {
+                    this.view.innerHTML = `<div class="generic-web-page"><h1>${tab.url}</h1><p>Mock Browser View</p></div>`;
+                }
+            }
+        }
+        window.chromeApp = new ChromeApp();
+
+        /* --- SETTINGS & FILE EXPLORER (Simplified for brevity as they were working) --- */
+        window.settingsApp = { setBg: (el, c) => { document.body.style.background = c; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); el.classList.add('selected'); }};
+        
+        class FileExplorer {
+            constructor() { this.path='Desktop'; this.render(); }
+            navigate(p) { this.path=p; this.render(); }
+            goBack(){} goForward(){}
+            render() {
+                const c = document.getElementById('explorerFiles');
+                c.innerHTML = '';
+                document.getElementById('addressBar').textContent = `This PC > ${this.path}`;
+                // Mock content
+                const items = (this.path==='Desktop') ? [{n:'Work', i:'folder-invoices.png'}, {n:'Resume.pdf', i:'document.png'}] : [];
+                items.forEach(i => {
+                    const d=document.createElement('div'); d.className='file-item';
+                    d.innerHTML=`<img src="https://img.icons8.com/color/48/${i.i}"><span>${i.n}</span>`;
+                    c.appendChild(d);
+                });
+                if(items.length===0) c.innerHTML='<div style="color:#999; padding:20px;">Empty folder</div>';
+            }
+        }
+        window.fileExplorer = new FileExplorer();
+
+        window.toggleStartMenu = () => showMessage("Start Menu placeholder");
+
+        // Init Auth - MOVED TO BOTTOM TO PREVENT REFERENCE ERRORS
+        (async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                currentUser = auth.currentUser;
+                console.log("Auth initialized:", currentUser.uid);
+                
+                // Now these objects are guaranteed to exist
+                chromeApp.initBookmarksListener();
+                storeApp.initInstalledAppsListener();
+            } catch (e) {
+                console.error("Auth failed:", e);
+                showMessage("Database connection failed.");
+            }
+        })();
+    </script>
+</body>
+</html>
